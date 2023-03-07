@@ -100,6 +100,9 @@ func (vt *H264) WriteAVCC(ts uint32, frame *util.BLL) (err error) {
 }
 
 func (vt *H264) WriteRTPFrame(frame *RTPFrame) {
+	if vt.lastSeq != vt.lastSeq2+1 && !(vt.lastSeq == 0 && vt.lastSeq2 == 0) {
+		vt.lostFlag = true
+	}
 	rv := &vt.Value
 	if naluType := frame.H264Type(); naluType < 24 {
 		vt.WriteSliceBytes(frame.Payload)
@@ -119,7 +122,12 @@ func (vt *H264) WriteRTPFrame(frame *RTPFrame) {
 			if util.Bit1(frame.Payload[1], 0) {
 				vt.WriteSliceByte(naluType.Parse(frame.Payload[1]).Or(frame.Payload[0] & 0x60))
 			}
-			rv.AUList.Pre.Value.Push(vt.BytesPool.GetShell(frame.Payload[naluType.Offset():]))
+			if rv.AUList.Pre != nil && rv.AUList.Pre.Value != nil {
+				rv.AUList.Pre.Value.Push(vt.BytesPool.GetShell(frame.Payload[naluType.Offset():]))
+			} else {
+				vt.Error("fu have no start")
+				return
+			}
 		}
 	}
 	frame.SequenceNumber += vt.rtpSequence //增加偏移，需要增加rtp包后需要顺延
