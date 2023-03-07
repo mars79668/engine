@@ -290,19 +290,21 @@ func (s *Subscriber) PlayBlock(subType byte) {
 					s.VideoReader.ConfSeq = s.VideoReader.Track.SequenceHeadSeq
 					sendVideoDecConf()
 				}
-				if audioFrame != nil {
-					if frame.AbsTime > lastAbsTime {
-						if audioFrame.CanRead {
-							sendAudioFrame(audioFrame)
+				if hasAudio {
+					if audioFrame != nil {
+						if frame.AbsTime > lastAbsTime {
+							if audioFrame.CanRead {
+								sendAudioFrame(audioFrame)
+							}
+							videoFrame = frame
+							lastAbsTime = frame.AbsTime
+							break
 						}
-						videoFrame = frame
-						lastAbsTime = frame.AbsTime
-						break
-					}
-				} else if lastAbsTime == 0 {
-					if lastAbsTime = frame.AbsTime; lastAbsTime != 0 {
-						videoFrame = frame
-						break
+					} else if lastAbsTime == 0 {
+						if lastAbsTime = frame.AbsTime; lastAbsTime != 0 {
+							videoFrame = frame
+							break
+						}
 					}
 				}
 				if !conf.IFrameOnly || frame.IFrame {
@@ -335,7 +337,7 @@ func (s *Subscriber) PlayBlock(subType byte) {
 					s.AudioReader.ConfSeq = s.AudioReader.Track.SequenceHeadSeq
 					sendAudioDecConf()
 				}
-				if videoFrame != nil {
+				if hasVideo && videoFrame != nil {
 					if frame.AbsTime > lastAbsTime {
 						if videoFrame.CanRead {
 							sendVideoFrame(videoFrame)
