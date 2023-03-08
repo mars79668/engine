@@ -1,10 +1,10 @@
 package mpegps
 
 import (
-	"io"
+    "io"
 
-	"github.com/yapingcat/gomedia/go-codec"
-	"github.com/yapingcat/gomedia/go-mpeg2"
+    "github.com/yapingcat/gomedia/go-codec"
+    "github.com/yapingcat/gomedia/go-mpeg2"
 )
 
 type psstream struct {
@@ -45,7 +45,7 @@ func NewPSDemuxer() *PSDemuxer {
     }
 }
 
-func (psdemuxer *PSDemuxer) Input(data []byte) error {
+func (psdemuxer *PSDemuxer) Feed(data []byte) error {
     var bs *codec.BitStream
     if len(psdemuxer.cache) > 0 {
         psdemuxer.cache = append(psdemuxer.cache, data...)
@@ -167,12 +167,12 @@ func (psdemuxer *PSDemuxer) Input(data []byte) error {
 }
 
 func (psdemuxer *PSDemuxer) Drop() {
-	psdemuxer.cache = psdemuxer.cache[:0]
+    psdemuxer.cache = psdemuxer.cache[:0]
     for _, stream := range psdemuxer.streamMap {
         if len(stream.streamBuf) == 0 {
             continue
         }
-        
+
     }
 }
 
@@ -237,7 +237,7 @@ func (psdemuxer *PSDemuxer) demuxAudio(stream *psstream, pes *mpeg2.PesPacket) e
         if psdemuxer.OnFrame != nil {
             psdemuxer.OnFrame(stream.streamBuf, stream.cid, stream.pts, stream.dts)
         }
-				stream.streamBuf = nil
+        stream.streamBuf = nil
         // stream.streamBuf = stream.streamBuf[:0]
     }
     stream.streamBuf = append(stream.streamBuf, pes.Pes_payload...)

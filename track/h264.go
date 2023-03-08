@@ -33,6 +33,7 @@ func (vt *H264) WriteSliceBytes(slice []byte) {
 	switch naluType {
 	case codec.NALU_SPS:
 		vt.SPSInfo, _ = codec.ParseSPS(slice)
+		vt.Debug("SPS", zap.Any("SPSInfo", vt.SPSInfo))
 		vt.Video.SPS = slice
 		vt.ParamaterSets[0] = slice
 	case codec.NALU_PPS:
