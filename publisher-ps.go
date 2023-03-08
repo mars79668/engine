@@ -4,6 +4,7 @@ import (
 	"github.com/pion/rtp/v2"
 	"github.com/yapingcat/gomedia/go-mpeg2"
 	"go.uber.org/zap"
+	"m7s.live/engine/v4/codec/mpegps"
 	. "m7s.live/engine/v4/track"
 	"m7s.live/engine/v4/util"
 )
@@ -17,7 +18,7 @@ type PSPublisher struct {
 	Publisher
 	DisableReorder bool //是否禁用rtp重排序,TCP模式下应当禁用
 	// mpegps.MpegPsStream `json:"-"`
-	*mpeg2.PSDemuxer
+	*mpegps.PSDemuxer
 	reorder util.RTPReorder[*cacheItem]
 	pool    util.BytesPool
 	lastSeq uint16
@@ -29,7 +30,7 @@ func (p *PSPublisher) PushPS(rtp *rtp.Packet) {
 		return
 	}
 	if p.PSDemuxer == nil {
-		p.PSDemuxer = mpeg2.NewPSDemuxer()
+		p.PSDemuxer = mpegps.NewPSDemuxer()
 		p.PSDemuxer.OnPacket = p.OnPacket
 		p.PSDemuxer.OnFrame = p.OnFrame
 		p.lastSeq = rtp.SequenceNumber - 1
@@ -47,7 +48,7 @@ func (p *PSPublisher) PushPS(rtp *rtp.Packet) {
 		for cacheItem := p.reorder.Push(rtp.SequenceNumber, &cacheItem{rtp.SequenceNumber, item}); cacheItem != nil; cacheItem = p.reorder.Pop() {
 			if cacheItem.Seq != p.lastSeq+1 {
 				p.Debug("drop", zap.Uint16("seq", cacheItem.Seq), zap.Uint16("lastSeq", p.lastSeq))
-				// p.Drop()
+				p.Drop()
 				if p.VideoTrack != nil {
 					p.SetLostFlag()
 				}
@@ -63,33 +64,33 @@ func (p *PSPublisher) OnFrame(frame []byte, cid mpeg2.PS_STREAM_TYPE, pts uint64
 	switch cid {
 	case mpeg2.PS_STREAM_AAC:
 		if p.AudioTrack != nil {
-			p.AudioTrack.WriteADTS(uint32(pts*90), frame)
+			p.AudioTrack.WriteADTS(uint32(pts), frame)
 		} else {
 			p.AudioTrack = NewAAC(p.Publisher.Stream)
 		}
 	case mpeg2.PS_STREAM_G711A:
 		if p.AudioTrack != nil {
-			p.AudioTrack.WriteRaw(uint32(pts*90), frame)
+			p.AudioTrack.WriteRaw(uint32(pts), frame)
 		} else {
 			p.AudioTrack = NewG711(p.Publisher.Stream, true)
 		}
 	case mpeg2.PS_STREAM_G711U:
 		if p.AudioTrack != nil {
-			p.AudioTrack.WriteRaw(uint32(pts*90), frame)
+			p.AudioTrack.WriteRaw(uint32(pts), frame)
 		} else {
 			p.AudioTrack = NewG711(p.Publisher.Stream, false)
 		}
 	case mpeg2.PS_STREAM_H264:
 		if p.VideoTrack != nil {
 			// p.WriteNalu(uint32(pts), uint32(dts), frame)
-			p.WriteAnnexB(uint32(pts*90), uint32(dts*90), frame)
+			p.WriteAnnexB(uint32(pts), uint32(dts), frame)
 		} else {
 			p.VideoTrack = NewH264(p.Publisher.Stream)
 		}
 	case mpeg2.PS_STREAM_H265:
 		if p.VideoTrack != nil {
 			// p.WriteNalu(uint32(pts), uint32(dts), frame)
-			p.WriteAnnexB(uint32(pts*90), uint32(dts*90), frame)
+			p.WriteAnnexB(uint32(pts), uint32(dts), frame)
 		} else {
 			p.VideoTrack = NewH265(p.Publisher.Stream)
 		}

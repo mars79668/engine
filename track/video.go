@@ -177,6 +177,7 @@ func (vt *Video) WriteAVCC(ts uint32, frame *util.BLL) (e error) {
 }
 
 func (vt *Video) WriteSliceByte(b ...byte) {
+	// fmt.Println("write slice byte", b)
 	vt.WriteSliceBytes(b)
 }
 

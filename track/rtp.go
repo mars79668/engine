@@ -27,8 +27,9 @@ func (av *Media) WriteRTP(raw *util.ListItem[RTPFrame]) {
 		if len(frame.Value.Payload) > 0 {
 			av.Value.RTP.Push(frame)
 			av.WriteRTPFrame(&frame.Value)
+			// av.Info("rtp", zap.Uint32("ts", (frame.Value.Timestamp)), zap.Int("len", len(frame.Value.Payload)), zap.Bool("marker", frame.Value.Marker), zap.Uint16("seq", frame.Value.SequenceNumber))
 		} else {
-			av.Warn("rtp payload is empty",zap.Bool("marker",frame.Value.Marker), zap.Uint16("seq", frame.Value.SequenceNumber))
+			av.Warn("rtp payload is empty", zap.Uint32("ts", (frame.Value.Timestamp)), zap.Any("ext", frame.Value.GetExtensionIDs()), zap.Uint16("seq", frame.Value.SequenceNumber))
 			frame.Recycle()
 		}
 	}

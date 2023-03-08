@@ -29,7 +29,7 @@ func NewH264(stream IStream, stuff ...any) (vt *H264) {
 
 func (vt *H264) WriteSliceBytes(slice []byte) {
 	naluType := codec.ParseH264NALUType(slice[0])
-	// println("naluType", naluType)
+	// vt.Info("naluType", zap.Uint8("naluType", naluType.Byte()))
 	switch naluType {
 	case codec.NALU_SPS:
 		vt.SPSInfo, _ = codec.ParseSPS(slice)
@@ -100,8 +100,9 @@ func (vt *H264) WriteAVCC(ts uint32, frame *util.BLL) (err error) {
 }
 
 func (vt *H264) WriteRTPFrame(frame *RTPFrame) {
-	if vt.lastSeq != vt.lastSeq2+1 && !(vt.lastSeq == 0 && vt.lastSeq2 == 0) {
+	if vt.lastSeq != vt.lastSeq2+1 && vt.lastSeq2 != 0 {
 		vt.lostFlag = true
+		vt.Warn("lost rtp packet", zap.Uint16("lastSeq", vt.lastSeq), zap.Uint16("lastSeq2", vt.lastSeq2))
 	}
 	rv := &vt.Value
 	if naluType := frame.H264Type(); naluType < 24 {
