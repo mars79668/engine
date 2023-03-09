@@ -25,9 +25,6 @@ type DecPSPackage struct {
 	systemClockReferenceBase      uint64
 	systemClockReferenceExtension uint64
 	programMuxRate                uint32
-
-	VideoStreamType uint32
-	AudioStreamType uint32
 	IOBuffer
 	Payload []byte
 	PTS     uint32
@@ -53,7 +50,7 @@ func (dec *DecPSPackage) ReadPayload() (payload []byte, err error) {
 	}
 	return dec.ReadN(int(payloadlen))
 }
-func (dec *DecPSPackage) Feed(ps []byte){
+func (dec *DecPSPackage) Feed(ps []byte) {
 	if len(ps) >= 4 && util.BigEndian.Uint32(ps) == StartCodePS {
 		if dec.Len() > 0 {
 			dec.Skip(4)
@@ -65,6 +62,7 @@ func (dec *DecPSPackage) Feed(ps []byte){
 		dec.Write(ps)
 	}
 }
+
 // read the buffer and push video or audio
 func (dec *DecPSPackage) Read(ts uint32) error {
 again:
@@ -95,21 +93,21 @@ loop:
 		case StartCodeMAP:
 			err = dec.decProgramStreamMap()
 		case StartCodeVideo:
-			var cts uint32
+			// var cts uint32
 			if err = dec.decPESPacket(); err == nil {
 				if len(video) == 0 {
 					dec.video.PTS = dec.PTS
 					dec.video.DTS = dec.DTS
-					if dec.PTS == 0 {
-						dec.PTS = ts
-					}
-					if dec.DTS != 0 {
-						cts = dec.PTS - dec.DTS
-					} else {
-						dec.DTS = dec.PTS
-					}
-					videoTs = dec.DTS / 90
-					videoCts = cts / 90
+					// if dec.PTS == 0 {
+					// 	dec.PTS = ts
+					// }
+					// if dec.DTS != 0 {
+					// 	cts = dec.PTS - dec.DTS
+					// } else {
+					// 	dec.DTS = dec.PTS
+					// }
+					// videoTs = dec.DTS / 90
+					// videoCts = cts / 90
 				}
 				video = append(video, dec.Payload...)
 			} else {
@@ -200,10 +198,8 @@ func (dec *DecPSPackage) decProgramStreamMap() error {
 		elementaryStreamID := psm[index]
 		index++
 		if elementaryStreamID >= 0xe0 && elementaryStreamID <= 0xef {
-			dec.VideoStreamType = uint32(streamType)
 			dec.video.Type = streamType
 		} else if elementaryStreamID >= 0xc0 && elementaryStreamID <= 0xdf {
-			dec.AudioStreamType = uint32(streamType)
 			dec.audio.Type = streamType
 		}
 		if l <= index+1 {
